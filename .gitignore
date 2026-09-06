@@ -1,0 +1,12 @@
+# Build output - generated every time you build, never commit these
+bin/
+obj/
+
+# Visual Studio / VS Code user-specific files - specific to your machine
+.vs/
+.vscode/
+*.user
+
+# OS junk files
+.DS_Store
+Thumbs.db
