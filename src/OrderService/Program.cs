@@ -1,7 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using OrderService.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// We will register services (DbContext, repositories, etc.) here
-// step by step in the upcoming lessons - kept empty on purpose for now.
+// This is the DI registration step we studied in Priority 2 -
+// AddDbContext registers OrderDbContext with a SCOPED lifetime by
+// default. "UseSqlServer" tells EF Core which database provider to use,
+// and reads the actual connection string from appsettings.json below.
+builder.Services.AddDbContext<OrderDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("OrderDb")));
 
 var app = builder.Build();
 

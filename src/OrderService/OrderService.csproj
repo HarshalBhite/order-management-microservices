@@ -7,4 +7,21 @@
     <RootNamespace>OrderService</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Lets EF Core talk to SQL Server specifically -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.10" />
+
+    <!-- Enables "dotnet ef" commands (migrations, database update) -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <!-- Nice-to-have: pretty-prints EF Core query logs during development -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.10">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
 </Project>
