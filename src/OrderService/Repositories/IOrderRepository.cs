@@ -13,6 +13,21 @@ public interface IOrderRepository
     Task<List<Order>> GetAllAsync();
     Task AddAsync(Order order);
 
+    // New for Step 6: filtering, sorting, and pagination, all applied at
+    // the DATABASE level (translated to SQL by EF Core), not fetched
+    // into memory first. Returns both the page of data AND the total
+    // matching count (needed to calculate TotalPages in the response).
+    //
+    // "status" and "sortBy" are optional (nullable) - if not supplied,
+    // no filter/default sort is applied, matching the "optional query
+    // parameter" pattern from the REST API notes.
+    Task<(List<Order> Orders, int TotalCount)> GetOrdersAsync(
+        OrderStatus? status,
+        string? sortBy,
+        string sortDirection,
+        int page,
+        int pageSize);
+
     // Note: no explicit "Update" method here. With EF Core, once an
     // entity is fetched via GetByIdAsync, it's already being "tracked"
     // by the DbContext - so changing its properties and later calling

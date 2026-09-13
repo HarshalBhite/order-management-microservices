@@ -23,20 +23,38 @@ public class OrdersController : ControllerBase
         _unitOfWork = unitOfWork;
     }
 
-    // GET api/orders
+    // GET api/orders?status=Pending&sortBy=totalAmount&sortDirection=desc&page=1&pageSize=10
+    //
+    // All parameters here are OPTIONAL (nullable, or have default
+    // values) - ASP.NET Core automatically binds query string values to
+    // these parameters by NAME (the "automatic model binding" from the
+    // Web API & Routing notes) - no manual URL parsing needed.
     [HttpGet]
-    public async Task<ActionResult<List<OrderDto>>> GetAllOrders()
+    public async Task<ActionResult<PagedResultDto<OrderDto>>> GetAllOrders(
+        [FromQuery] OrderStatus? status,
+        [FromQuery] string? sortBy,
+        [FromQuery] string sortDirection = "asc",
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
-        var orders = await _unitOfWork.Orders.GetAllAsync();
+        // Basic guardrails - never trust client-supplied paging values
+        // blindly. Without this, a client could request pageSize=999999
+        // and effectively defeat the whole point of pagination.
+        if (page < 1) page = 1;
+        if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-        // Mapping entities -> DTOs, right here in the controller for
-        // now (fine at this project's scale; larger real systems often
-        // use a mapping library like AutoMapper to avoid writing this
-        // by hand everywhere - worth knowing that exists, not required
-        // here).
-        var dtos = orders.Select(MapToDto).ToList();
+        var (orders, totalCount) = await _unitOfWork.Orders.GetOrdersAsync(
+            status, sortBy, sortDirection, page, pageSize);
 
-        return Ok(dtos); // 200 OK
+        var result = new PagedResultDto<OrderDto>
+        {
+            Data = orders.Select(MapToDto).ToList(),
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
+
+        return Ok(result); // 200 OK
     }
 
     // GET api/orders/5
