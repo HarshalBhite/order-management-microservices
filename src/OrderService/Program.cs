@@ -1,6 +1,6 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
-using OrderService.Models;
 using OrderService.Repositories;
 using OrderService.UnitOfWork;
 
@@ -12,11 +12,6 @@ var builder = WebApplication.CreateBuilder(args);
 // and reads the actual connection string from appsettings.json below.
 builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("OrderDb")));
-
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-});
 
 // Registering the repository and Unit of Work as SCOPED - matching
 // OrderDbContext's lifetime. This is deliberate: since all three
@@ -32,42 +27,32 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IUnitOfWork, OrderService.UnitOfWork.UnitOfWork>();
 
+// Registers MVC-style controllers (like OrdersController) with the DI
+// container and routing system - required for attribute routing
+// ([Route], [HttpGet], etc.) to work at all.
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Fixes the second open item from Step 3: serializes enums
+        // (like OrderStatus) as their STRING name ("Pending") instead
+        // of the raw underlying integer (0). Applied globally here, so
+        // every controller/DTO in the app benefits automatically,
+        // without repeating this per-property.
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
+
+// NOTE: the previous IgnoreCycles band-aid from Step 3 has been REMOVED
+// here on purpose. It's no longer needed - OrderDto/OrderItemDto are
+// flat, purpose-built classes with no back-reference to their parent,
+// so there is no circular reference for the serializer to ever
+// encounter in the first place. This is the "real fix" mentioned back
+// in Step 3.
+
 var app = builder.Build();
 
-// TEMPORARY test endpoints - just to verify Repository + Unit of Work
-// wiring works end-to-end. These are NOT proper REST design (no DTOs,
-// no attribute routing, no status codes) - we'll replace these with a
-// real OrdersController in Step 5.
-
-app.MapPost("/test-order", async (IUnitOfWork uow) =>
-{
-    var order = new Order
-    {
-        CustomerName = "Test Customer",
-        OrderDate = DateTime.UtcNow,
-        Status = OrderStatus.Pending,
-        TotalAmount = 250.00m,
-        Items = new List<OrderItem>
-        {
-            new OrderItem { ProductName = "Widget", Quantity = 2, UnitPrice = 100.00m },
-            new OrderItem { ProductName = "Gadget", Quantity = 1, UnitPrice = 50.00m }
-        }
-    };
-
-    await uow.Orders.AddAsync(order);
-    await uow.SaveChangesAsync(); // nothing hits the DB until this line
-
-    return Results.Ok(order);
-});
-
-app.MapGet("/test-orders", async (IUnitOfWork uow) =>
-{
-    var orders = await uow.Orders.GetAllAsync();
-    return Results.Ok(orders);
-});
-
-// A single, temporary "hello world" endpoint just to prove the project
-// runs end-to-end. We will replace this with real controllers in Step 5.
-app.MapGet("/", () => "OrderService is running.");
+// Wires up attribute-routed controllers (OrdersController) to actually
+// handle incoming requests. Without this line, [Route]/[HttpGet]/etc.
+// attributes would be defined but never actually reachable.
+app.MapControllers();
 
 app.Run();
