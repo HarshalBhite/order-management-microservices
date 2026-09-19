@@ -10,3 +10,6 @@ obj/
 # OS junk files
 .DS_Store
 Thumbs.db
+
+# Serilog file sink output - runtime-generated logs, never commit these
+Logs/

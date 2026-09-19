@@ -3,8 +3,26 @@ using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
 using OrderService.Repositories;
 using OrderService.UnitOfWork;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// STEP 8 - Serilog configuration.
+// builder.Host.UseSerilog(...) replaces the default .NET logger with
+// Serilog entirely - every ILogger<T> injected anywhere in the app
+// (controllers, repositories, etc.) will now go through Serilog under
+// the hood, without us having to change any of that code.
+//
+// ReadFrom.Configuration(context.Configuration) means the actual sink
+// list, minimum log levels, etc. are driven by the "Serilog" section in
+// appsettings.json (added below) - not hardcoded here. This is the
+// standard, configuration-driven approach used in real projects, so
+// logging behavior can differ between environments (e.g. more verbose
+// in Development, quieter in Production) without a code change.
+builder.Host.UseSerilog((context, loggerConfig) =>
+{
+    loggerConfig.ReadFrom.Configuration(context.Configuration);
+});
 
 // This is the DI registration step we studied in Priority 2 -
 // AddDbContext registers OrderDbContext with a SCOPED lifetime by
@@ -67,6 +85,14 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+// Logs EVERY incoming HTTP request automatically - method, path, status
+// code, and duration in milliseconds - without writing a single log
+// statement for it ourselves. This is genuinely useful in real systems:
+// even before adding Correlation IDs (a later step), this alone gives
+// you a timeline of every request the service handled. Placed early in
+// the pipeline so it wraps everything after it.
+app.UseSerilogRequestLogging();
 
 // Swagger is deliberately gated behind IsDevelopment() - a real,
 // security-conscious practice. Exposing your full API surface

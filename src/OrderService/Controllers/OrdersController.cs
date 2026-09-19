@@ -17,10 +17,17 @@ namespace OrderService.Controllers;
 public class OrdersController : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<OrdersController> _logger;
 
-    public OrdersController(IUnitOfWork unitOfWork)
+    // ILogger<OrdersController> is injected by DI, same mechanism as
+    // everything else we've registered. The generic <OrdersController>
+    // parameter automatically tags every log entry from this class with
+    // its source ("OrderService.Controllers.OrdersController"), which is
+    // itself another structured property useful for filtering later.
+    public OrdersController(IUnitOfWork unitOfWork, ILogger<OrdersController> logger)
     {
         _unitOfWork = unitOfWork;
+        _logger = logger;
     }
 
     // GET api/orders?status=Pending&sortBy=totalAmount&sortDirection=desc&page=1&pageSize=10
@@ -65,6 +72,13 @@ public class OrdersController : ControllerBase
 
         if (order is null)
         {
+            // LogWarning, not LogError - a missing order isn't a system
+            // failure, just a normal "not found" case. {OrderId} here is
+            // a NAMED structured property (not string interpolation) -
+            // this is what makes it filterable/searchable later, exactly
+            // as discussed at the top of this step.
+            _logger.LogWarning("Order {OrderId} was requested but does not exist", id);
+
             // Correct REST status code for "resource doesn't exist" -
             // from the Priority 3 status code notes. NOT 200 with an
             // empty body, NOT 500.
@@ -98,6 +112,17 @@ public class OrdersController : ControllerBase
 
         await _unitOfWork.Orders.AddAsync(order);
         await _unitOfWork.SaveChangesAsync();
+
+        // LogInformation with structured properties - {OrderId},
+        // {CustomerName}, and {TotalAmount} are each stored as separate
+        // fields, not just flattened into the message text. This is
+        // exactly the kind of log entry that becomes genuinely useful
+        // once Correlation IDs are added later (Step 15) - you'll be
+        // able to trace this exact order's creation across every
+        // service it touches.
+        _logger.LogInformation(
+            "Order {OrderId} created for customer {CustomerName} with total {TotalAmount}",
+            order.Id, order.CustomerName, order.TotalAmount);
 
         // 201 Created - the correct status code for a successful POST
         // that created a new resource (from Priority 3 notes). CreatedAtAction

@@ -26,6 +26,24 @@
     <!-- Swagger/OpenAPI - generates interactive API documentation
          directly from our controllers and DTOs (Step 7). -->
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+
+    <!-- Serilog (Step 8) - structured logging.
+         AspNetCore: hooks Serilog into the ASP.NET Core hosting pipeline.
+         Settings.Configuration: lets Serilog be configured from
+         appsettings.json (ReadFrom.Configuration) instead of hardcoded
+         C# - the standard, environment-flexible approach.
+         Sinks.Console: writes logs to the terminal (readable during dev).
+         Sinks.File: writes logs to a rolling file on disk (useful for
+         anything you'd want to inspect after the app has stopped, or
+         ship off to a log aggregator later).
+         Enrichers.Environment / Enrichers.Thread: add extra structured
+         context (machine name, thread id) to every log entry automatically. -->
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.4" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
   </ItemGroup>
 
 </Project>
