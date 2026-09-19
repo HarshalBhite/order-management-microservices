@@ -13,4 +13,4 @@ to demonstrate architecture and patterns, not complex domain rules.
   reservations
 
 ## Status
-Currently on: Step 1 — Project setup & Git
+Currently on: Step 7 — Swagger documentation
