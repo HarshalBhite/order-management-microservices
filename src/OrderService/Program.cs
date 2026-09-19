@@ -48,7 +48,40 @@ builder.Services.AddControllers()
 // encounter in the first place. This is the "real fix" mentioned back
 // in Step 3.
 
+// STEP 7 - Swagger/OpenAPI registration.
+// AddEndpointsApiExplorer() lets ASP.NET Core discover our minimal/
+// attribute-routed endpoints so Swagger can describe them.
+// AddSwaggerGen() is what actually builds the OpenAPI document by
+// reading our controllers, action methods, and DTOs via reflection -
+// this is why the docs stay automatically in sync with the real code,
+// as discussed in the Priority 3 REST API notes.
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Order Service API",
+        Version = "v1",
+        Description = "Learning project API for Order Management - demonstrates Repository, Unit of Work, DTOs, and REST design."
+    });
+});
+
 var app = builder.Build();
+
+// Swagger is deliberately gated behind IsDevelopment() - a real,
+// security-conscious practice. Exposing your full API surface
+// (endpoints, request/response shapes) publicly in production isn't
+// something you want by default; Swagger here is a development/testing
+// convenience, not something to ship to a real production environment
+// unprotected.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Order Service API v1");
+    });
+}
 
 // Wires up attribute-routed controllers (OrdersController) to actually
 // handle incoming requests. Without this line, [Route]/[HttpGet]/etc.
